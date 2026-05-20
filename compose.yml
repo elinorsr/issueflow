@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: issueflow
+      POSTGRES_PASSWORD: issueflow
+      POSTGRES_DB: issueflow
+    ports:
+      - "5432:5432"

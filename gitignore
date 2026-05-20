@@ -1,0 +1,13 @@
+/dist
+/node_modules
+/build
+/coverage
+/.nyc_output
+uploads/
+logs
+*.log
+.env
+.env.*
+.DS_Store
+*.pid
+*.seed
