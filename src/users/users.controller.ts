@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Param, Body, ParseIntPipe, UseGuards,
+  Param, Body, ParseIntPipe, UseGuards, Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
@@ -33,8 +33,16 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/mentions')
-  getMentions(@Param('id', ParseIntPipe) id: number) {
-    return this.commentsService.findMentionsForUser(id);
+  getMentions(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.commentsService.findMentionsForUser(
+      id,
+      page ? Number(page) : 1,
+      pageSize ? Number(pageSize) : 20,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

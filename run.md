@@ -80,7 +80,7 @@ npm run test:cov
 | GET | /users/:id | Get user |
 | PATCH | /users/:id | Update user |
 | DELETE | /users/:id | Delete user |
-| GET | /users/:id/mentions | Comments where user was @mentioned |
+| GET | /users/:id/mentions | Comments where user was @mentioned (query: `page`, `pageSize`) |
 
 ### Projects
 | Method | Path | Description |
@@ -133,7 +133,7 @@ npm run test:cov
 ### Audit Log
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /audit-logs | All logs (filter: action, entity_type, entity_id, actor_id) |
+| GET | /audit-logs | All logs (filter: `action`, `entity_type`, `entity_id`, `actor`) |
 
 ## Key Business Rules
 

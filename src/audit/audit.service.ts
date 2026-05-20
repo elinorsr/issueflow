@@ -28,7 +28,7 @@ export class AuditService {
     action?: AuditAction;
     entity_type?: AuditEntityType;
     entity_id?: number;
-    actor_id?: number;
+    actor?: string;
   }): Promise<AuditLog[]> {
     const qb = this.auditRepo
       .createQueryBuilder('al')
@@ -37,7 +37,7 @@ export class AuditService {
     if (filters?.action) qb.andWhere('al.action = :action', { action: filters.action });
     if (filters?.entity_type) qb.andWhere('al.entity_type = :entity_type', { entity_type: filters.entity_type });
     if (filters?.entity_id) qb.andWhere('al.entity_id = :entity_id', { entity_id: filters.entity_id });
-    if (filters?.actor_id) qb.andWhere('al.actor_id = :actor_id', { actor_id: filters.actor_id });
+    if (filters?.actor) qb.andWhere('al.actor = :actor', { actor: filters.actor });
 
     return qb.getMany();
   }

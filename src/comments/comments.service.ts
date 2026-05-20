@@ -58,14 +58,22 @@ export class CommentsService {
     await this.commentsRepo.remove(comment);
   }
 
-  async findMentionsForUser(userId: number): Promise<Comment[]> {
-    return this.commentsRepo
+  async findMentionsForUser(
+    userId: number,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ data: Comment[]; total: number; page: number; pageSize: number }> {
+    const [data, total] = await this.commentsRepo
       .createQueryBuilder('c')
       .innerJoin('c.mentionedUsers', 'u', 'u.id = :userId', { userId })
       .leftJoinAndSelect('c.mentionedUsers', 'mu')
       .leftJoinAndSelect('c.author', 'a')
       .orderBy('c.created_at', 'DESC')
-      .getMany();
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return { data, total, page, pageSize };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────

@@ -99,6 +99,22 @@ The entire backend was built in a single guided session with Claude acting as a 
 
 ---
 
+## Stage 7 — Gap Analysis & Bug Fixes
+
+**Prompt:**
+> "כן" (אחרי בקשה לבדוק מה מומש מול הדרישות ומה חסר)
+
+**Agent actions:**
+- Performed full requirements gap analysis across all 45 requirement items
+- Found 3 issues: partial audit filter, bug in deleted projects endpoint, missing pagination
+- Fixed `GET /audit-logs`: replaced numeric `actor_id` filter with string `actor` filter — now supports `"SYSTEM"` and usernames
+- Fixed `GET /projects/deleted`: was returning all projects (including active); now filters `deleted_at IS NOT NULL` only
+- Fixed `GET /users/:id/mentions`: added `?page=&pageSize=` query params with defaults (1/20), returns `{ data, total, page, pageSize }`
+- Updated `run.md` and `prompts.md` to reflect changes
+- Verified: `npm run build` → 0 errors
+
+---
+
 ## Key Technical Decisions Made by Agent
 
 | Decision | Rationale |

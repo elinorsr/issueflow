@@ -13,13 +13,13 @@ export class AuditController {
     @Query('action') action?: AuditAction,
     @Query('entity_type') entity_type?: AuditEntityType,
     @Query('entity_id') entity_id?: string,
-    @Query('actor_id') actor_id?: string,
+    @Query('actor') actor?: string,
   ) {
     return this.auditService.findAll({
       action,
       entity_type,
       entity_id: entity_id ? Number(entity_id) : undefined,
-      actor_id: actor_id ? Number(actor_id) : undefined,
+      actor,
     });
   }
 }

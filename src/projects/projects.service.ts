@@ -49,6 +49,11 @@ export class ProjectsService {
   }
 
   async findDeleted(): Promise<Project[]> {
-    return this.projectsRepo.find({ withDeleted: true, where: {} });
+    return this.projectsRepo
+      .createQueryBuilder('p')
+      .withDeleted()
+      .where('p.deleted_at IS NOT NULL')
+      .orderBy('p.deleted_at', 'DESC')
+      .getMany();
   }
 }
