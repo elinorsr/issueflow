@@ -1,6 +1,6 @@
 import {
   Controller, Post, Get, Delete, Param, ParseIntPipe,
-  UseGuards, UseInterceptors, UploadedFile, Res,
+  UseGuards, UseInterceptors, UploadedFile, Res, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -35,6 +35,7 @@ export class AttachmentsController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
   ) {
+    if (!file) throw new BadRequestException('File is required');
     return this.attachmentsService.upload(ticketId, file, user?.id);
   }
 

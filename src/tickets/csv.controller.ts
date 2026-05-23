@@ -1,6 +1,6 @@
 import {
-  Controller, Get, Post, Query, Param, ParseIntPipe,
-  UseGuards, UseInterceptors, UploadedFile, Res, Body,
+  Controller, Get, Post, Query, ParseIntPipe,
+  UseGuards, UseInterceptors, UploadedFile, Res, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -32,7 +32,7 @@ export class CsvController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
   ) {
-    if (!file) throw new Error('CSV file is required');
+    if (!file) throw new BadRequestException('CSV file is required');
     return this.csvService.importTickets(projectId, file.buffer, user?.id);
   }
 }
