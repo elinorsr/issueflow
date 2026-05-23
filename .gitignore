@@ -1,0 +1,36 @@
+# Compiled output
+/dist
+/build
+
+# Node modules
+/node_modules
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# NestJS build info
+*.tsbuildinfo
+
+# Test coverage
+/coverage
+
+# Uploads (runtime files)
+/uploads
+
+# Claude Code session data
+.claude/
