@@ -5,6 +5,7 @@ import {
 import { CommentsService } from './comments.service';
 import { CreateCommentDto, UpdateCommentDto } from './comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller()
@@ -15,8 +16,9 @@ export class CommentsController {
   create(
     @Param('ticketId', ParseIntPipe) ticketId: number,
     @Body() dto: CreateCommentDto,
+    @CurrentUser() user: any,
   ) {
-    return this.commentsService.create(ticketId, dto);
+    return this.commentsService.create(ticketId, dto, user?.id, user?.username);
   }
 
   @Get('tickets/:ticketId/comments')
@@ -28,12 +30,13 @@ export class CommentsController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCommentDto,
+    @CurrentUser() user: any,
   ) {
-    return this.commentsService.update(id, dto);
+    return this.commentsService.update(id, dto, user?.id, user?.username);
   }
 
   @Delete('comments/:id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.commentsService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
+    return this.commentsService.remove(id, user?.id, user?.username);
   }
 }

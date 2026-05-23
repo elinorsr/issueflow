@@ -5,6 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketDependency } from './ticket-dependency.entity';
 import { Ticket, TicketStatus } from './ticket.entity';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction, AuditEntityType } from '../audit/audit-log.entity';
 
 @Injectable()
 export class DependenciesService {
@@ -13,9 +15,15 @@ export class DependenciesService {
     private readonly depsRepo: Repository<TicketDependency>,
     @InjectRepository(Ticket)
     private readonly ticketsRepo: Repository<Ticket>,
+    private readonly auditService: AuditService,
   ) {}
 
-  async addDependency(ticketId: number, blockedById: number): Promise<TicketDependency> {
+  async addDependency(
+    ticketId: number,
+    blockedById: number,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<TicketDependency> {
     const ticket = await this.ticketsRepo.findOne({ where: { id: ticketId } });
     if (!ticket) throw new NotFoundException(`Ticket ${ticketId} not found`);
 
@@ -36,7 +44,18 @@ export class DependenciesService {
     if (existing) throw new BadRequestException('Dependency already exists');
 
     const dep = this.depsRepo.create({ ticket_id: ticketId, blocked_by_id: blockedById });
-    return this.depsRepo.save(dep);
+    const saved = await this.depsRepo.save(dep);
+
+    await this.auditService.log({
+      action: AuditAction.ADD_DEPENDENCY,
+      entity_type: AuditEntityType.TICKET,
+      entity_id: ticketId,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { blocked_by_id: blockedById },
+    });
+
+    return saved;
   }
 
   async listDependencies(ticketId: number): Promise<Ticket[]> {
@@ -47,12 +66,26 @@ export class DependenciesService {
     return deps.map(d => d.blockedBy);
   }
 
-  async removeDependency(ticketId: number, blockerId: number): Promise<void> {
+  async removeDependency(
+    ticketId: number,
+    blockerId: number,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<void> {
     const dep = await this.depsRepo.findOne({
       where: { ticket_id: ticketId, blocked_by_id: blockerId },
     });
     if (!dep) throw new NotFoundException('Dependency not found');
     await this.depsRepo.remove(dep);
+
+    await this.auditService.log({
+      action: AuditAction.REMOVE_DEPENDENCY,
+      entity_type: AuditEntityType.TICKET,
+      entity_id: ticketId,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { blocker_id: blockerId },
+    });
   }
 
   async hasUnresolvedBlockers(ticketId: number): Promise<boolean> {

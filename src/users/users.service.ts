@@ -6,11 +6,14 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './user.entity';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction, AuditEntityType } from '../audit/audit-log.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<Omit<User, 'password'>> {
@@ -22,6 +25,16 @@ export class UsersService {
     const hashed = await bcrypt.hash(dto.password, 10);
     const user = this.usersRepo.create({ ...dto, password: hashed });
     const saved = await this.usersRepo.save(user);
+
+    await this.auditService.log({
+      action: AuditAction.CREATE,
+      entity_type: AuditEntityType.USER,
+      entity_id: saved.id,
+      actor_id: saved.id,
+      actor: saved.username,
+      metadata: { username: saved.username, email: saved.email, role: saved.role },
+    });
+
     return this.strip(saved);
   }
 
@@ -47,18 +60,46 @@ export class UsersService {
       .getOne();
   }
 
-  async update(id: number, dto: UpdateUserDto): Promise<Omit<User, 'password'>> {
+  async update(
+    id: number,
+    dto: UpdateUserDto,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<Omit<User, 'password'>> {
     const user = await this.usersRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User ${id} not found`);
     Object.assign(user, dto);
     const saved = await this.usersRepo.save(user);
+
+    await this.auditService.log({
+      action: AuditAction.UPDATE,
+      entity_type: AuditEntityType.USER,
+      entity_id: id,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { updated_fields: Object.keys(dto) },
+    });
+
     return this.strip(saved);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(
+    id: number,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<void> {
     const user = await this.usersRepo.findOne({ where: { id } });
     if (!user) throw new NotFoundException(`User ${id} not found`);
     await this.usersRepo.remove(user);
+
+    await this.auditService.log({
+      action: AuditAction.DELETE,
+      entity_type: AuditEntityType.USER,
+      entity_id: id,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { username: user.username },
+    });
   }
 
   private strip(user: User): Omit<User, 'password'> {

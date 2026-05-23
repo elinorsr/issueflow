@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { DependenciesService } from './dependencies.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { IsNumber } from 'class-validator';
 
 class AddDependencyDto {
@@ -20,8 +21,9 @@ export class DependenciesController {
   add(
     @Param('ticketId', ParseIntPipe) ticketId: number,
     @Body() dto: AddDependencyDto,
+    @CurrentUser() user: any,
   ) {
-    return this.depsService.addDependency(ticketId, dto.blockedBy);
+    return this.depsService.addDependency(ticketId, dto.blockedBy, user?.id, user?.username);
   }
 
   @Get()
@@ -33,7 +35,8 @@ export class DependenciesController {
   remove(
     @Param('ticketId', ParseIntPipe) ticketId: number,
     @Param('blockerId', ParseIntPipe) blockerId: number,
+    @CurrentUser() user: any,
   ) {
-    return this.depsService.removeDependency(ticketId, blockerId);
+    return this.depsService.removeDependency(ticketId, blockerId, user?.id, user?.username);
   }
 }

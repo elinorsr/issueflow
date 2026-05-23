@@ -6,33 +6,60 @@ import { Repository } from 'typeorm';
 import { Comment } from './comment.entity';
 import { User } from '../users/user.entity';
 import { CreateCommentDto, UpdateCommentDto } from './comment.dto';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction, AuditEntityType } from '../audit/audit-log.entity';
+
+type MentionedUser = { id: number; username: string; fullName: string };
 
 @Injectable()
 export class CommentsService {
   constructor(
     @InjectRepository(Comment) private readonly commentsRepo: Repository<Comment>,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    private readonly auditService: AuditService,
   ) {}
 
-  async create(ticket_id: number, dto: CreateCommentDto): Promise<Comment> {
+  async create(
+    ticket_id: number,
+    dto: CreateCommentDto,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<Comment> {
     const comment = this.commentsRepo.create({ ...dto, ticket_id });
     const saved = await this.commentsRepo.save(comment);
 
     // Parse and attach mentions
     const mentioned = await this.resolveMentions(dto.content);
     saved.mentionedUsers = mentioned;
-    return this.commentsRepo.save(saved);
+    const result = await this.commentsRepo.save(saved);
+
+    await this.auditService.log({
+      action: AuditAction.CREATE,
+      entity_type: AuditEntityType.COMMENT,
+      entity_id: result.id,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { ticket_id, mentions: mentioned.map(u => u.username) },
+    });
+
+    return this.formatComment(result);
   }
 
   async findByTicket(ticket_id: number): Promise<Comment[]> {
-    return this.commentsRepo.find({
+    const comments = await this.commentsRepo.find({
       where: { ticket_id },
       relations: ['author', 'mentionedUsers'],
       order: { created_at: 'ASC' },
     });
+    return comments.map(c => this.formatComment(c));
   }
 
-  async update(id: number, dto: UpdateCommentDto): Promise<Comment> {
+  async update(
+    id: number,
+    dto: UpdateCommentDto,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<Comment> {
     const comment = await this.commentsRepo.findOne({
       where: { id },
       relations: ['mentionedUsers'],
@@ -49,13 +76,37 @@ export class CommentsService {
     comment.content = dto.content;
     // Re-evaluate mentions on update
     comment.mentionedUsers = await this.resolveMentions(dto.content);
-    return this.commentsRepo.save(comment);
+    const result = await this.commentsRepo.save(comment);
+
+    await this.auditService.log({
+      action: AuditAction.UPDATE,
+      entity_type: AuditEntityType.COMMENT,
+      entity_id: id,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { mentions: comment.mentionedUsers.map(u => u.username) },
+    });
+
+    return this.formatComment(result);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(
+    id: number,
+    actorId?: number,
+    actorName?: string,
+  ): Promise<void> {
     const comment = await this.commentsRepo.findOne({ where: { id } });
     if (!comment) throw new NotFoundException(`Comment ${id} not found`);
     await this.commentsRepo.remove(comment);
+
+    await this.auditService.log({
+      action: AuditAction.DELETE,
+      entity_type: AuditEntityType.COMMENT,
+      entity_id: id,
+      actor_id: actorId,
+      actor: actorName,
+      metadata: { ticket_id: comment.ticket_id },
+    });
   }
 
   async findMentionsForUser(
@@ -73,10 +124,24 @@ export class CommentsService {
       .take(pageSize)
       .getManyAndCount();
 
-    return { data, total, page, pageSize };
+    return { data: data.map(c => this.formatComment(c)), total, page, pageSize };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  /** Strip sensitive fields and format mentionedUsers per API spec */
+  private formatComment(comment: Comment): Comment {
+    if (comment.mentionedUsers) {
+      (comment as any).mentionedUsers = comment.mentionedUsers.map(
+        (u): MentionedUser => ({ id: u.id, username: u.username, fullName: u.full_name }),
+      );
+    }
+    if (comment.author) {
+      const { password, ...safeAuthor } = comment.author as any;
+      (comment as any).author = safeAuthor;
+    }
+    return comment;
+  }
 
   private parseMentionUsernames(content: string): string[] {
     const matches = content.match(/@(\w+)/g) ?? [];
