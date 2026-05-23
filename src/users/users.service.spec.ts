@@ -3,6 +3,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from './user.entity';
+import { AuditService } from '../audit/audit.service';
+
+const mockAuditService = { log: jest.fn().mockResolvedValue(undefined) };
 
 const mockUser: User = {
   id: 1,
@@ -31,6 +34,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: mockRepo },
+        { provide: AuditService, useValue: mockAuditService },
       ],
     }).compile();
 

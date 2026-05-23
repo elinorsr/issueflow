@@ -4,6 +4,9 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CommentsService } from './comments.service';
 import { Comment } from './comment.entity';
 import { User, UserRole } from '../users/user.entity';
+import { AuditService } from '../audit/audit.service';
+
+const mockAuditService = { log: jest.fn().mockResolvedValue(undefined) };
 
 const mockUser = (id: number, username: string): User => ({
   id,
@@ -50,6 +53,7 @@ describe('CommentsService', () => {
         CommentsService,
         { provide: getRepositoryToken(Comment), useValue: mockCommentsRepo },
         { provide: getRepositoryToken(User), useValue: mockUsersRepo },
+        { provide: AuditService, useValue: mockAuditService },
       ],
     }).compile();
 
