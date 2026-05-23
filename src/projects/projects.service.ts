@@ -109,6 +109,19 @@ export class ProjectsService {
       withDeleted: true,
     });
     if (!project) throw new NotFoundException(`Project ${id} not found`);
+
+    // Restore all soft-deleted tickets belonging to this project
+    const deletedTickets = await this.ticketsRepo
+      .createQueryBuilder('t')
+      .withDeleted()
+      .where('t.project_id = :id', { id })
+      .andWhere('t.deleted_at IS NOT NULL')
+      .getMany();
+
+    if (deletedTickets.length > 0) {
+      await this.ticketsRepo.restore(deletedTickets.map(t => t.id));
+    }
+
     await this.projectsRepo.restore(id);
 
     await this.auditService.log({
@@ -117,7 +130,7 @@ export class ProjectsService {
       entity_id: id,
       actor_id: actorId,
       actor: actorName,
-      metadata: { name: project.name },
+      metadata: { name: project.name, tickets_restored: deletedTickets.length },
     });
 
     return this.projectsRepo.findOne({ where: { id } });

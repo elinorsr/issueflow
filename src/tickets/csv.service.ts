@@ -25,6 +25,9 @@ export class CsvService {
   ) {}
 
   async exportTickets(projectId: number, actorId?: number): Promise<string> {
+    const project = await this.projectsRepo.findOne({ where: { id: projectId } });
+    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+
     const tickets = await this.ticketsRepo.find({ where: { project_id: projectId } });
 
     const rows = tickets.map(t => ({
