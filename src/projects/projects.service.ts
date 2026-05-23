@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Project } from './project.entity';
 import { User } from '../users/user.entity';
+import { Ticket } from '../tickets/ticket.entity';
 import { CreateProjectDto, UpdateProjectDto } from './project.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction, AuditEntityType } from '../audit/audit-log.entity';
@@ -14,6 +15,7 @@ export class ProjectsService {
   constructor(
     @InjectRepository(Project) private readonly projectsRepo: Repository<Project>,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    @InjectRepository(Ticket) private readonly ticketsRepo: Repository<Ticket>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -78,6 +80,13 @@ export class ProjectsService {
     actorName?: string,
   ): Promise<void> {
     const project = await this.findOne(id);
+
+    // Soft-delete all tickets belonging to this project
+    const tickets = await this.ticketsRepo.find({ where: { project_id: id } });
+    if (tickets.length > 0) {
+      await this.ticketsRepo.softRemove(tickets);
+    }
+
     await this.projectsRepo.softRemove(project);
 
     await this.auditService.log({
@@ -86,7 +95,7 @@ export class ProjectsService {
       entity_id: id,
       actor_id: actorId,
       actor: actorName,
-      metadata: { name: project.name },
+      metadata: { name: project.name, tickets_soft_deleted: tickets.length },
     });
   }
 

@@ -25,7 +25,8 @@ export class CommentsService {
     actorId?: number,
     actorName?: string,
   ): Promise<Comment> {
-    const comment = this.commentsRepo.create({ ...dto, ticket_id });
+    // author_id always comes from the authenticated user — never from the request body
+    const comment = this.commentsRepo.create({ ...dto, ticket_id, author_id: actorId });
     const saved = await this.commentsRepo.save(comment);
 
     // Parse and attach mentions

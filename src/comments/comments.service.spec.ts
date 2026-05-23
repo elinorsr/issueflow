@@ -76,7 +76,7 @@ describe('CommentsService', () => {
       };
       mockUsersRepo.createQueryBuilder.mockReturnValue(qbMock);
 
-      await service.create(1, { content: 'Hello @alice, check this', author_id: 2 });
+      await service.create(1, { content: 'Hello @alice, check this' }, 2, 'alice');
 
       expect(mockUsersRepo.createQueryBuilder).toHaveBeenCalled();
       expect(qbMock.where).toHaveBeenCalledWith(
@@ -90,7 +90,7 @@ describe('CommentsService', () => {
       mockCommentsRepo.create.mockReturnValue(comment);
       mockCommentsRepo.save.mockResolvedValue(comment);
 
-      await service.create(1, { content: 'No mentions here', author_id: 1 });
+      await service.create(1, { content: 'No mentions here' }, 1, 'testuser');
       expect(mockUsersRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
 
@@ -108,10 +108,7 @@ describe('CommentsService', () => {
       mockUsersRepo.createQueryBuilder.mockReturnValue(qbMock);
 
       // alice appears twice — should resolve to one user
-      await service.create(1, {
-        content: '@alice and @alice again',
-        author_id: 2,
-      });
+      await service.create(1, { content: '@alice and @alice again' }, 2, 'bob');
 
       // Called twice (once per @mention) but deduplicated in result
       expect(mockUsersRepo.createQueryBuilder).toHaveBeenCalledTimes(2);

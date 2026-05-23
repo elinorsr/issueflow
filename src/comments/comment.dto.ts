@@ -4,10 +4,6 @@ export class CreateCommentDto {
   @IsNotEmpty()
   @IsString()
   content: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  author_id: number;
 }
 
 export class UpdateCommentDto {

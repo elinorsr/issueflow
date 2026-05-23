@@ -9,11 +9,12 @@ import { DependenciesController } from './dependencies.controller';
 import { CsvService } from './csv.service';
 import { CsvController } from './csv.controller';
 import { User } from '../users/user.entity';
+import { Project } from '../projects/project.entity';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Ticket, TicketDependency, User]),
+    TypeOrmModule.forFeature([Ticket, TicketDependency, User, Project]),
     AuditModule,
   ],
   providers: [TicketsService, DependenciesService, CsvService],

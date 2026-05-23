@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
 import { Ticket, TicketStatus, TicketPriority, TicketType } from '../tickets/ticket.entity';
+import { Project } from '../projects/project.entity';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction, AuditEntityType } from '../audit/audit-log.entity';
 
@@ -18,6 +19,8 @@ export class CsvService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketsRepo: Repository<Ticket>,
+    @InjectRepository(Project)
+    private readonly projectsRepo: Repository<Project>,
     private readonly auditService: AuditService,
   ) {}
 
@@ -55,6 +58,9 @@ export class CsvService {
     fileBuffer: Buffer,
     actorId?: number,
   ): Promise<{ created: number; failed: number; errors: string[] }> {
+    const project = await this.projectsRepo.findOne({ where: { id: projectId } });
+    if (!project) throw new NotFoundException(`Project ${projectId} not found`);
+
     let records: any[];
 
     try {
